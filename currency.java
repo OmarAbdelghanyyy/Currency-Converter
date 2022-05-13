@@ -1,3 +1,6 @@
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -5,9 +8,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DecimalFormat;
 
 /**
  *
@@ -44,7 +49,7 @@ public class currency extends javax.swing.JFrame implements ActionListener {
 
         jLabel1.setText("Enter your Amount:");
         //fromCurrency.setModel sets the dropdown list thing
-        String[] currencyList ={ "USD", "CAD ", "EUR", "GBP" ,"EGP","AED","KWD","JPY","RUB"};
+        String[] currencyList ={ "USD", "CAD ", "EUR", "GBP" ,"EGP","AED","KWD","JPY","RUB","SAR"};
 
         fromCurrency.setModel(new javax.swing.DefaultComboBoxModel<>(currencyList));
 
@@ -169,26 +174,33 @@ public class currency extends javax.swing.JFrame implements ActionListener {
 
     }
     private static void getRate(String from, String to, Double amount) throws IOException {
-        String url_str = "https://v6.exchangerate-api.com/v6/0ee066d1e643498486e31805/latest/"+from;
+
+
+// Making Request
+        // Setting URL
+        String url_str = "https://v6.exchangerate-api.com/v6/0ee066d1e643498486e31805/pair/"+from+"/"+to;
+
 
 // Making Request
         URL url = new URL(url_str);
         HttpURLConnection request = (HttpURLConnection) url.openConnection();
-        request.setRequestMethod("GET");
-        int responseCode = request.getResponseCode();
-        if(responseCode==HttpURLConnection.HTTP_OK){
-            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-            String inputLine;
-            StringBuffer response = new StringBuffer();
-            while((inputLine=in.readLine())!=null) {
-                response.append(inputLine);
-            }in.close();
-            JSONObject obj = new JSONObject(response.toString());
-            Double exchangeRate= obj.getJSONObject("conversion_rates").getDouble(to);
-            Double result = exchangeRate*amount;
-            String completionMessage= amount+" in "+from+" is equal to"+ result+" in "+to;
-            JOptionPane.showMessageDialog(null, completionMessage, "Dialog",
-                    JOptionPane.INFORMATION_MESSAGE);
+        request.connect();
+// JsonElement root has the conversion rate
+// Convert to JSON
+         JsonParser jp = new JsonParser();
+        JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent()));
+        JsonObject jsonobj = root.getAsJsonObject();
+       JsonElement rate= jsonobj.get("conversion_rate");
+      Double exchangeRate= rate.getAsDouble();
+
+// Accessing object
+
+       Double result = exchangeRate*amount;
+        DecimalFormat decimalFormat = new DecimalFormat("#.000");
+        String formatted =decimalFormat.format(result);
+       String completionMessage= amount+" in "+from+" is equal to "+ formatted+" in "+to;
+           JOptionPane.showMessageDialog(null, completionMessage, "Conversion Rate",
+                    JOptionPane.PLAIN_MESSAGE);
 
 
 
@@ -198,5 +210,5 @@ public class currency extends javax.swing.JFrame implements ActionListener {
 
   }
 
-}
+
 
